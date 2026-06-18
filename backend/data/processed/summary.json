@@ -1,0 +1,15 @@
+{
+  "total_violations": 292905,
+  "total_hotspots": 764,
+  "critical_hotspots": 2,
+  "high_hotspots": 16,
+  "date_range": [
+    "2023-11-10",
+    "2024-04-08"
+  ],
+  "total_days": 151,
+  "unique_vehicles": 231736,
+  "top_station": "Upparpet",
+  "top_offense": "WRONG_PARKING",
+  "police_stations": 54
+}

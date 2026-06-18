@@ -105,8 +105,8 @@ def load_and_clean(csv_path: str) -> pd.DataFrame:
     df["created_datetime"] = df["created_datetime"].dt.tz_convert("Asia/Kolkata")
     df.loc[df["closed_datetime"].notna(), "closed_datetime"] = df.loc[df["closed_datetime"].notna(), "closed_datetime"].dt.tz_convert("Asia/Kolkata")
 
-    # ── Remove rows with no lat/lon ──
-    df = df.dropna(subset=["latitude", "longitude"])
+    # ── Remove rows with no lat/lon or datetime ──
+    df = df.dropna(subset=["latitude", "longitude", "created_datetime"])
     df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
     df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
     df = df.dropna(subset=["latitude", "longitude"])

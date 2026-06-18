@@ -6,6 +6,7 @@ import os
 from api.copilot import router as copilot_router
 from api.routing import router as routing_router
 from api.geocoding import router as geocoding_router
+from api.data import router as data_router
 
 app = FastAPI(
     title="Pravaaha GeoIntel API",
@@ -24,6 +25,7 @@ app.add_middleware(
 app.include_router(copilot_router, prefix="/api/copilot", tags=["Copilot"])
 app.include_router(routing_router, prefix="/api/routing", tags=["Routing"])
 app.include_router(geocoding_router, prefix="/api/geocoding", tags=["Geocoding"])
+app.include_router(data_router, prefix="/api/data", tags=["Data"])
 
 @app.get("/health")
 def health_check():
