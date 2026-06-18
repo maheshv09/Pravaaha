@@ -70,3 +70,26 @@ export const OFFENSE_COLORS = {
 export function getOffenseColor(code) {
   return OFFENSE_COLORS[code] || '#6b7280';
 }
+
+const PRIMARY_API = "https://pravaaha-backend.onrender.com";
+const FALLBACK_API = "http://localhost:8000";
+
+export async function apiFetch(endpoint, options = {}) {
+  const url = `${PRIMARY_API}${endpoint}`;
+  try {
+    const response = await fetch(url, { ...options, signal: AbortSignal.timeout(4000) });
+    if (!response.ok) throw new Error(`Primary failed with status ${response.status}`);
+    return await response.json();
+  } catch (primaryErr) {
+    console.warn("Primary API failed, trying localhost fallback:", primaryErr);
+    const fallbackUrl = `${FALLBACK_API}${endpoint}`;
+    try {
+      const response = await fetch(fallbackUrl, { ...options });
+      if (!response.ok) throw new Error(`Fallback failed with status ${response.status}`);
+      return await response.json();
+    } catch (fallbackErr) {
+      console.error("Both primary and fallback APIs failed");
+      throw fallbackErr;
+    }
+  }
+}

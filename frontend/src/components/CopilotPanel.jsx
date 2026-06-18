@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatNumber } from '../lib/utils';
+import { formatNumber, apiFetch } from '../lib/utils';
 
 export default function CopilotPanel({ data, hotspots, onMapAction }) {
   const [messages, setMessages] = useState([
@@ -65,24 +65,34 @@ export default function CopilotPanel({ data, hotspots, onMapAction }) {
     setLoading(true);
 
     try {
-      // If we had the FastAPI backend running, we would fetch here:
-      /*
-      const res = await fetch('http://localhost:8000/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: userMsg })
-      });
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: 'ai', content: data.response }]);
-      */
+      let aiResponse = "";
+      let action = null;
       
-      const { response: aiResponse, action } = await mockGroqResponse(userMsg);
+      try {
+        const responseData = await apiFetch("/api/copilot/chat", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: userMsg })
+        });
+        aiResponse = responseData.response;
+        action = responseData.parsed ? {
+          type: responseData.parsed.intent === 'predict_congestion' ? 'SWITCH_TAB' : 'ZOOM_TO',
+          tab: responseData.parsed.intent === 'predict_congestion' ? 'simulation' : undefined,
+          lat: responseData.parsed.zone ? 12.9716 : undefined, // In reality, we'd lookup coordinates
+          lon: responseData.parsed.zone ? 77.5946 : undefined
+        } : null;
+      } catch (apiErr) {
+        console.warn("Real API failed. Falling back to Mock responses.");
+        const mockResult = await mockGroqResponse(userMsg);
+        aiResponse = mockResult.response;
+        action = mockResult.action;
+      }
+      
       setMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
       
       // Execute the Map Action if it exists (Feature 1)
       if (action) {
         if (action.type === 'SWITCH_TAB') {
-          // Pass this specific action to a parent handler or just use onMapAction which handles tab switches
           setTimeout(() => onMapAction && onMapAction(action), 1500);
         } else {
           onMapAction && onMapAction(action);
