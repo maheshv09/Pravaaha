@@ -1,4 +1,3 @@
-import pandas as pd
 import json
 import os
 from fastapi import APIRouter
@@ -7,10 +6,11 @@ router = APIRouter()
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "../data/processed")
 
-def load_csv(filename):
+def load_json(filename):
     path = os.path.join(DATA_DIR, filename)
     if os.path.exists(path):
-        return pd.read_csv(path).to_dict(orient="records")
+        with open(path, "r") as f:
+            return json.load(f)
     return []
 
 @router.get("/dashboard")
@@ -37,13 +37,13 @@ def get_dashboard_data():
             }
             
     # The frontend expects specific camelCase keys.
-    hotspots_raw = load_csv("hotspots.csv")
+    hotspots_raw = load_json("hotspots.json")
     hotspots_mapped = []
     for h in hotspots_raw:
         # Extract offense percentages dynamically
         offenses = {}
         for k, v in h.items():
-            if k.startswith("pct_") and not pd.isna(v) and v > 0:
+            if k.startswith("pct_") and v is not None and v > 0:
                 offenses[k.replace("pct_", "")] = round(v * 100, 1)
 
         root_causes = []
@@ -61,38 +61,38 @@ def get_dashboard_data():
             "lon": h.get("lon_center", 0),
             "count": h.get("violation_count", 0),
             "uniqueDates": h.get("unique_dates", 0),
-            "recurrenceScore": round(h.get("recurrence_score", 0), 2),
-            "dailyDensity": round(h.get("daily_density", 0), 1),
-            "peakHour": int(h.get("peak_hour", 0)),
-            "avgHour": round(h.get("avg_hour", 0), 1),
-            "weekendRatio": round(h.get("weekend_ratio", 0), 2),
-            "growthTrend": round(h.get("growth_trend", 0), 2),
+            "recurrenceScore": round(h.get("recurrence_score", 0), 2) if h.get("recurrence_score") is not None else 0,
+            "dailyDensity": round(h.get("daily_density", 0), 1) if h.get("daily_density") is not None else 0,
+            "peakHour": int(h.get("peak_hour", 0)) if h.get("peak_hour") is not None else 0,
+            "avgHour": round(h.get("avg_hour", 0), 1) if h.get("avg_hour") is not None else 0,
+            "weekendRatio": round(h.get("weekend_ratio", 0), 2) if h.get("weekend_ratio") is not None else 0,
+            "growthTrend": round(h.get("growth_trend", 0), 2) if h.get("growth_trend") is not None else 0,
             "topOffense": h.get("primary_offense_mode", "UNKNOWN"),
             "offenses": offenses,
             "station": h.get("police_station", "Unknown"),
             "landmark": h.get("nearest_landmark", "Unknown"),
-            "landmarkDist": round(h.get("landmark_distance_km", 0), 2),
-            "severityScore": round(h.get("severity_score", 0), 1),
-            "congestionImpact": round(h.get("congestion_impact", 0), 1),
+            "landmarkDist": round(h.get("landmark_distance_km", 0), 2) if h.get("landmark_distance_km") is not None else 0,
+            "severityScore": round(h.get("severity_score", 0), 1) if h.get("severity_score") is not None else 0,
+            "congestionImpact": round(h.get("congestion_impact", 0), 1) if h.get("congestion_impact") is not None else 0,
             "riskTier": h.get("risk_tier", "LOW"),
-            "rank": int(h.get("rank", 0)),
+            "rank": int(h.get("rank", 0)) if h.get("rank") is not None else 0,
             "rootCauses": root_causes
         })
     
     # Process heatmap points for frontend
-    heatmap_raw = load_csv("heatmap_data.csv")
-    heatmap_data = [{"lat": r["latitude"], "lon": r["longitude"], "w": r["weight"]} for r in heatmap_raw]
+    heatmap_raw = load_json("heatmap_data.json")
+    heatmap_data = [{"lat": r["latitude"], "lon": r["longitude"], "w": r["weight"]} for r in heatmap_raw if "latitude" in r and "longitude" in r]
     
     # Load other tables
-    offense_breakdown_raw = load_csv("offense_breakdown.csv")
+    offense_breakdown_raw = load_json("offense_breakdown.json")
     offense_breakdown = [{"name": r.get("offense", "Unknown"), "count": r.get("count", 0)} for r in offense_breakdown_raw]
 
-    vehicle_breakdown_raw = load_csv("vehicle_breakdown.csv")
+    vehicle_breakdown_raw = load_json("vehicle_breakdown.json")
     vehicle_breakdown = [{"name": r.get("vehicle_type", "Unknown"), "count": r.get("count", 0)} for r in vehicle_breakdown_raw]
     
-    hourly_pattern = load_csv("hourly_pattern.csv")
+    hourly_pattern = load_json("hourly_pattern.json")
     
-    daily_trend_raw = load_csv("daily_trend.csv")
+    daily_trend_raw = load_json("daily_trend.json")
     daily_trend = []
     for r in daily_trend_raw:
         # map date -> date and count -> count
@@ -100,7 +100,7 @@ def get_dashboard_data():
         if "7d_avg" in r: r_mapped["avg7d"] = r["7d_avg"]
         daily_trend.append(r_mapped)
 
-    station_summary_raw = load_csv("station_summary.csv")
+    station_summary_raw = load_json("station_summary.json")
     station_summary = []
     for r in station_summary_raw:
         station_summary.append({

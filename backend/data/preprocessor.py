@@ -396,6 +396,8 @@ def run_full_pipeline(csv_path: str, output_dir: str) -> Dict:
         points_cols.append("h3_res8")
 
     df[points_cols].to_csv(os.path.join(output_dir, "violations_clean.csv"), index=False)
+    
+    # Save CSVs
     hotspots.to_csv(os.path.join(output_dir, "hotspots.csv"), index=False)
     time_series.to_csv(os.path.join(output_dir, "time_series.csv"), index=False)
     station_summary.to_csv(os.path.join(output_dir, "station_summary.csv"), index=False)
@@ -404,11 +406,21 @@ def run_full_pipeline(csv_path: str, output_dir: str) -> Dict:
     offense_breakdown.to_csv(os.path.join(output_dir, "offense_breakdown.csv"), index=False)
     vehicle_breakdown.to_csv(os.path.join(output_dir, "vehicle_breakdown.csv"), index=False)
 
+    # Save JSON versions so they are not ignored by .gitignore (*.csv) on deployment
+    hotspots.to_json(os.path.join(output_dir, "hotspots.json"), orient="records", indent=2)
+    time_series.to_json(os.path.join(output_dir, "time_series.json"), orient="records", indent=2)
+    station_summary.to_json(os.path.join(output_dir, "station_summary.json"), orient="records", indent=2)
+    hourly_pattern.to_json(os.path.join(output_dir, "hourly_pattern.json"), orient="records", indent=2)
+    daily_trend.to_json(os.path.join(output_dir, "daily_trend.json"), orient="records", indent=2)
+    offense_breakdown.to_json(os.path.join(output_dir, "offense_breakdown.json"), orient="records", indent=2)
+    vehicle_breakdown.to_json(os.path.join(output_dir, "vehicle_breakdown.json"), orient="records", indent=2)
+
     # Save heatmap data (lat, lon, weight for Leaflet.heat)
     heat_data = df[["latitude", "longitude"]].copy()
     heat_data["weight"] = 1
     heat_agg = heat_data.groupby(["latitude", "longitude"]).agg(weight=("weight", "sum")).reset_index()
     heat_agg.to_csv(os.path.join(output_dir, "heatmap_data.csv"), index=False)
+    heat_agg.to_json(os.path.join(output_dir, "heatmap_data.json"), orient="records", indent=2)
 
     # Save a JSON summary for the frontend
     summary = {
